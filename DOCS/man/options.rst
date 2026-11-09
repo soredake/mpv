@@ -1342,12 +1342,12 @@ Video
     Whether hardware decoding is actually done depends on the video codec. If
     hardware decoding is not possible, mpv will fall back on software decoding.
 
-    Hardware decoding is not enabled by default, to keep the out-of-the-box
-    configuration as reliable as possible. However, when using modern hardware,
-    hardware video decoding should work correctly, offering reduced CPU usage,
-    and possibly lower power consumption. On older systems, it may be necessary
-    to use hardware decoding due to insufficient CPU resources; and even on
-    modern systems, sufficiently complex content (eg: 4K60 AV1) may require it.
+    Hardware decoding is enabled by default: the default value ``auto`` limits
+    itself to whitelisted methods considered safe (see below). This reduces CPU
+    usage and possibly power consumption on modern hardware, and makes it
+    possible to play sufficiently complex content (eg: 4K60 AV1) on systems
+    whose CPU alone could not handle it. If hardware decoding causes problems,
+    set this option to ``no``.
 
     This is a string list option. See `List Options`_ for details.
 
@@ -1356,22 +1356,16 @@ Video
         Use the ``Ctrl+h`` shortcut to toggle hardware decoding at runtime. It
         toggles this option between ``auto`` and ``no``.
 
-        If you decide you want to use hardware decoding by default, the general
-        recommendation is to try out decoding with the command line option, and
-        prove to yourself that it works as desired for the content you care
-        about. After that, you can add it to your config file.
+        When troubleshooting hardware decoding, you should start with
+        ``hwdec=auto`` (the default), as it will limit itself to choosing from
+        hwdecs that are actively supported by the development team. If that
+        doesn't result in working hardware decoding, you can try
+        ``hwdec=auto-unsafe`` to have it attempt to load every possible hwdec,
+        but if ``auto`` didn't work, you will probably need to know exactly
+        which hwdec matches your hardware and read up on that entry below.
 
-        When testing, you should start by using ``hwdec=auto`` as it will
-        limit itself to choosing from hwdecs that are actively supported by the
-        development team. If that doesn't result in working hardware decoding,
-        you can try ``hwdec=auto-unsafe`` to have it attempt to load every
-        possible hwdec, but if ``auto`` didn't work, you will probably need
-        to know exactly which hwdec matches your hardware and read up on that
-        entry below.
-
-        If ``auto`` produced the desired results, we recommend just
-        sticking with that and only setting a specific hwdec in your config
-        file if it is really necessary.
+        We recommend sticking with ``auto``, and only setting a specific hwdec
+        in your config file if it is really necessary.
 
         If you use the Ubuntu package, keep in mind that their
         ``/etc/mpv/mpv.conf`` contains ``hwdec=vaapi``, which is less than
@@ -1386,13 +1380,9 @@ Video
 
     .. admonition:: Which method to choose?
 
-        - If you only want to enable hardware decoding at runtime, don't set the
-          parameter, or put ``hwdec=no`` into your ``mpv.conf`` (relevant on
-          distros which force-enable it by default, such as on Ubuntu). Use the
-          ``Ctrl+h`` default binding to enable it at runtime.
-        - If you're not sure, but want hardware decoding always enabled by
-          default, put ``hwdec=yes`` into your ``mpv.conf``, and acknowledge that
-          this may cause problems.
+        - If hardware decoding causes problems on your system, put ``hwdec=no``
+          into your ``mpv.conf``, or use the ``Ctrl+h`` default binding to
+          toggle it at runtime.
         - If you want to test all available hardware decoding methods, pass
           ``--hwdec=auto-unsafe --hwdec-codecs=all`` and look at the terminal output.
         - If you're a developer, or want to perform elaborate tests, you may
@@ -1401,8 +1391,8 @@ Video
     This option accepts a comma delimited list of ``api`` types, along with certain
     special values:
 
-    :no:          always use software decoding (default)
-    :auto:        enable any whitelisted hw decoder (see below)
+    :no:          always use software decoding
+    :auto:        enable any whitelisted hw decoder (see below) (default)
     :auto-unsafe: forcibly enable any hw decoder found (see below)
     :yes:         exactly the same as ``auto``
     :auto-safe:   exactly the same as ``auto``
@@ -1450,13 +1440,12 @@ Video
 
     ``auto`` tries to automatically enable hardware decoding using the
     first available method, but allows only whitelisted methods that are
-    considered "safe". This is supposed to be a reasonable way to enable
-    hardware decoding by default in a config file (even though you shouldn't
-    do that anyway; prefer runtime enabling with ``Ctrl+h``). Unlike
-    ``auto-unsafe``, this will not try to enable unknown or known-to-be-bad
-    methods. In addition, this may disable hardware decoding in other situations
-    when it's known to cause problems, but currently this mechanism is quite
-    primitive. (As an example for something that still causes problems: certain
+    considered "safe". This is the default, and is supposed to be a reasonable
+    way to enable hardware decoding out of the box. Unlike ``auto-unsafe``,
+    this will not try to enable unknown or known-to-be-bad methods. In
+    addition, this may disable hardware decoding in other situations when it's
+    known to cause problems, but currently this mechanism is quite primitive.
+    (As an example for something that still causes problems: certain
     combinations of HEVC and Intel chips on Windows tend to cause mpv to crash,
     most likely due to driver bugs.)
 

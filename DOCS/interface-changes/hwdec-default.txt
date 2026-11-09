@@ -1,0 +1,1 @@
+change `--hwdec` default from `no` to `auto`
