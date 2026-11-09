@@ -18,6 +18,8 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -65,6 +67,79 @@ static void load_all_cfgfiles(struct MPContext *mpctx, char *section,
 // This name is used in builtin.conf to force encoding defaults (like ao/vo).
 #define SECT_ENCODE "encoding"
 
+// Volume state persistence (--save-volume-on-quit): store the current volume
+// on exit and restore it on the next startup.
+#define MP_VOLUME_STATE_FILE "volume"
+
+static char *mp_get_volume_state_file(struct MPContext *mpctx)
+{
+    return mp_find_user_file(NULL, mpctx->global, "state",
+                             MP_VOLUME_STATE_FILE);
+}
+
+void mp_save_volume_state(struct MPContext *mpctx)
+{
+    if (!mpctx->opts->volume_save_on_quit)
+        return;
+
+    // Don't clobber the saved volume with an untouched default when running
+    // in encoding mode.
+    if (mpctx->opts->encode_opts->file && mpctx->opts->encode_opts->file[0])
+        return;
+
+    char *file = mp_get_volume_state_file(mpctx);
+    if (!file)
+        return;
+
+    MP_VERBOSE(mpctx, "Saving volume to %s\n", file);
+
+    char *dir = bstrdup0(file, mp_dirname(file));
+    mp_path_strip_trailing_separator(dir);
+    mp_mkdirp(dir);
+    talloc_free(dir);
+
+    bstr data = {0};
+    bstr_xappend_asprintf(file, &data, "%f\n", mpctx->opts->softvol_volume);
+    if (!mp_save_to_file(file, data.start, data.len))
+        MP_WARN(mpctx, "Can't save volume to %s\n", file);
+
+    talloc_free(file);
+}
+
+static void restore_volume_state(struct MPContext *mpctx)
+{
+    if (!mpctx->opts->volume_save_on_quit)
+        return;
+
+    char *file = mp_get_volume_state_file(mpctx);
+    if (!file)
+        return;
+
+    bool ok = false;
+    FILE *fp = fopen(file, "r");
+    if (fp) {
+        char buf[64] = {0};
+        if (fgets(buf, sizeof(buf), fp)) {
+            char *end = NULL;
+            double vol = strtod(buf, &end);
+            if (end != buf && vol >= 0 && vol <= 1000) {
+                mpctx->opts->softvol_volume = vol;
+                ok = true;
+            }
+        }
+        fclose(fp);
+    }
+
+    if (ok) {
+        MP_VERBOSE(mpctx, "Restoring volume: %f\n",
+                   mpctx->opts->softvol_volume);
+    } else {
+        MP_VERBOSE(mpctx, "Not restoring volume from %s\n", file);
+    }
+
+    talloc_free(file);
+}
+
 void mp_parse_cfgfiles(struct MPContext *mpctx)
 {
     struct MPOpts *opts = mpctx->opts;
@@ -93,6 +168,9 @@ void mp_parse_cfgfiles(struct MPContext *mpctx)
     load_all_cfgfiles(mpctx, NULL, "encoding-profiles.conf");
 
     load_all_cfgfiles(mpctx, section, "mpv.conf|config");
+
+    if (!encoding)
+        restore_volume_state(mpctx);
 
     if (encoding) {
         m_config_set_profile(mpctx->mconfig, SECT_ENCODE, 0);

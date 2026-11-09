@@ -2241,6 +2241,18 @@ Audio
 
     See also: ``--volume``.
 
+``--save-volume-on-quit``
+    Save the current volume on exit and restore it on the next startup
+    (default: no). The volume is stored in a file named ``volume``
+    underneath the local state directory (usually ``~/.local/state/mpv/``).
+
+    When enabled, the saved volume takes precedence over the ``--volume``
+    option set in the config file, but a ``--volume`` given on the command
+    line still wins. Restoring also happens after exits not triggered by the
+    user, e.g. when the playlist finishes.
+
+    See also: ``--volume``, ``--mute``.
+
 ``--audio-demuxer=<[+]name>``
     Use this audio demuxer type when using ``--audio-file``. Use a '+' before
     the name to force it; this will skip some checks. Give the demuxer name as

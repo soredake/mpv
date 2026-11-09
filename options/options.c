@@ -851,6 +851,7 @@ static const m_option_t mp_opts[] = {
     {"resume-playback", OPT_BOOL(position_resume)},
     {"resume-playback-check-mtime", OPT_BOOL(position_check_mtime)},
     {"save-position-on-quit", OPT_BOOL(position_save_on_quit)},
+    {"save-volume-on-quit", OPT_BOOL(volume_save_on_quit)},
     {"write-filename-in-watch-later-config",
         OPT_BOOL(write_filename_in_watch_later_config)},
     {"ignore-path-in-watch-later-config",

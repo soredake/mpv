@@ -462,8 +462,10 @@ int mpv_main(int argc, char *argv[])
 
     char **options = argv && argv[0] ? argv + 1 : NULL; // skips program name
     int r = mp_initialize(mpctx, options);
-    if (r == 0)
+    if (r == 0) {
         mp_play_files(mpctx);
+        mp_save_volume_state(mpctx);
+    }
 
     int rc = 0;
     const char *reason = NULL;
